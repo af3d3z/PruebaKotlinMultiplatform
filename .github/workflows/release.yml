@@ -1,4 +1,4 @@
-name: Build and Release APK & IPA
+name: Build and Release Kotlin Multiplatform Apps (Android & iOS)
 
 on:
   push:
@@ -9,115 +9,99 @@ on:
 
 jobs:
   build_android:
-    runs-on: ubuntu-latest  # Android build runs on Ubuntu
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up JDK 17 (using Temurin)
+      # Set up JDK 17 (required for Android builds)
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # Cache Gradle dependencies
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
+      # Set up Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
         with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          api-level: 33
+          target: android-33
+          gradle: true
 
-      # Build the Android APK (adjust task if necessary based on the task list)
+      # Build the Android APK
       - name: Build Android APK
-        run: ./gradlew :assembleRelease  # Adjust based on your output from List Gradle tasks
+        run: ./gradlew assembleRelease
 
-      # Upload APK artifact
-      - name: Upload APK artifact
+      # List files in the build output directory (to check if the APK was created)
+      - name: List files in build output (Android)
+        run: find . -name "*.apk"
+
+      # Upload the APK artifact
+      - name: Upload Android APK artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-apk
           path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
 
- 
   build_ios:
-    runs-on: macos-latest  # iOS build requires macOS runner
-
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up JDK 17 (using Temurin)
+      # Set up JDK 17 (required for iOS builds)
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # No need to manually set Xcode
-      # You can skip this step or only set it if needed
-      # - name: Set up Xcode (optional)
-      #   run: sudo xcode-select -s /Applications/Xcode.app
-
-      # Cache Gradle dependencies
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
+      # Set up Gradle
+      - name: Set up Gradle
+        uses: gradle/wrapper-validation-action@v1
         with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-wrapper-version: '8.9'
 
-      # List Gradle tasks for debugging
-      - name: List Gradle tasks
-        run: ./gradlew tasks
+      # Build the Kotlin Multiplatform project (Android and iOS targets)
+      - name: Build the iOS app (Kotlin Multiplatform)
+        run: ./gradlew build
 
-      # Build the iOS IPA (update to the correct task for iOS)
-      - name: Build iOS IPA
-        run: ./gradlew :composeApp:iosX64Binaries
-
-      # Upload IPA artifact
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: PruebaKotlinMultiplatform-app-release-ipa
-          path: PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
-
-  
-      # List files for iOS build to locate the IPA
-      - name: List files for iOS build
-        run: find . -type f -name "*.ipa"
-
-      # Package iOS app to IPA
-      - name: Package iOS app to IPA
+      # Find the xcworkspace file dynamically
+      - name: Find xcworkspace
+        id: find_xcworkspace
         run: |
-          xcodebuild -workspace PruebaKotlinMultiplatform/ios/composeApp.xcworkspace -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
-          xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist $PWD/ios/ExportOptions.plist
+          WORKSPACE_PATH=$(find . -name "*.xcworkspace" | head -n 1)
+          echo "Workspace path: $WORKSPACE_PATH"
+          echo "workspace_path=$WORKSPACE_PATH" >> $GITHUB_ENV
 
-      # Upload IPA artifact
-      - name: Upload IPA artifact
+      # Find the ExportOptions.plist file dynamically
+      - name: Find ExportOptions.plist
+        id: find_export_plist
+        run: |
+          EXPORT_PLIST_PATH=$(find . -name "ExportOptions.plist" | head -n 1)
+          echo "ExportOptions.plist path: $EXPORT_PLIST_PATH"
+          echo "export_plist_path=$EXPORT_PLIST_PATH" >> $GITHUB_ENV
+
+      # Archive the app and build the IPA using xcodebuild
+      - name: Build and export iOS IPA
+        run: |
+          # Clean the previous build
+          xcodebuild clean -workspace ${{ env.workspace_path }} -scheme composeApp -sdk iphoneos
+
+          # Archive the app
+          xcodebuild -workspace ${{ env.workspace_path }} -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
+
+          # Export the IPA from the archive
+          xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist ${{ env.export_plist_path }}
+
+      # List files in the build output directory (to check if the IPA was created)
+      - name: List files in build output (iOS)
+        run: find $PWD/build -type f
+
+      # Upload the IPA artifact
+      - name: Upload iOS IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: $PWD/build/composeApp.ipa  # Update path based on where IPA is created
-
-  create_release:
-    needs: [build_android, build_ios]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: |
-            PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
-            PruebaKotlinMultiplatform/ios/build/composeApp.ipa
+          path: $PWD/build/composeApp.ipa
