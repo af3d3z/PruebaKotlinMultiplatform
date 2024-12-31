@@ -42,10 +42,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: android-app-release-apk
-          path: ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk # Adjust this path to match your build output
+          path: ./androidApp/build/outputs/apk/release/app-release-unsigned.apk  # Adjust this path to your actual APK path
 
   release_android:
-    needs: build_android  # Ensure the release happens after the build job
+    needs: build_android
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -68,7 +68,11 @@ jobs:
           RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
           
           # Create the release with the APK file
-          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
+          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/app-release-unsigned.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        permissions:
+          contents: write  # Permission to create releases
+          id-token: write  # This might be required for release creation in some cases
