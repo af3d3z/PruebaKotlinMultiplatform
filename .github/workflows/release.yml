@@ -9,13 +9,13 @@ on:
 
 jobs:
   build_android:
-    runs-on: ubuntu-latest  # This will run on the latest Ubuntu
+    runs-on: ubuntu-latest  # This will run on the latest Ubuntu for Android build
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up JDK (using Temurin)
+      # Set up JDK 17 (using Temurin)
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -40,16 +40,16 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-apk
-          path: PruebaKotlinMultiplatform/app/build/outputs/apk/release/app-release.apk
+          path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
 
   build_ios:
-    runs-on: macos-latest  # iOS build needs macOS runner
+    runs-on: macos-latest  # iOS build requires macOS runner
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up JDK (using Temurin)
+      # Set up JDK 17 (using Temurin)
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: PruebaKotlinMultiplatform/app/build/ios/ipa/release/app-release.ipa
+          path: PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
 
   create_release:
     needs: [build_android, build_ios]
@@ -95,5 +95,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            PruebaKotlinMultiplatform/app/build/outputs/apk/release/app-release.apk
-            PruebaKotlinMultiplatform/app/build/ios/ipa/release/app-release.ipa
+            PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
+            PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
