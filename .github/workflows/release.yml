@@ -53,9 +53,9 @@ jobs:
       # Find the correct iOS project or workspace file
       - name: Set paths for iOS build
         run: |
-          # Search for .xcworkspace and .xcodeproj files
-          WORKSPACE_PATH=$(find PruebaKotlinMultiplatform/ios -name "*.xcworkspace" -print -quit)
-          PROJECT_PATH=$(find PruebaKotlinMultiplatform/ios -name "*.xcodeproj" -print -quit)
+          # Search for .xcworkspace and .xcodeproj files in the correct folder
+          WORKSPACE_PATH=$(find PruebaKotlinMultiplatform/iosApp -name "*.xcworkspace" -print -quit)
+          PROJECT_PATH=$(find PruebaKotlinMultiplatform/iosApp -name "*.xcodeproj" -print -quit)
           
           if [ -n "$WORKSPACE_PATH" ]; then
             echo "Using workspace: $WORKSPACE_PATH"
@@ -64,11 +64,11 @@ jobs:
             echo "Using project: $PROJECT_PATH"
             echo "workspace_path=$PROJECT_PATH" >> $GITHUB_ENV
           else
-            echo "No .xcworkspace or .xcodeproj file found. Please ensure the correct project files are present."
+            echo "No .xcworkspace or .xcodeproj file found in PruebaKotlinMultiplatform/iosApp. Please ensure the correct project files are present."
             exit 1
           fi
 
-          echo "export_plist_path=PruebaKotlinMultiplatform/ios/ExportOptions.plist" >> $GITHUB_ENV
+          echo "export_plist_path=PruebaKotlinMultiplatform/iosApp/ExportOptions.plist" >> $GITHUB_ENV
 
       # Archive the iOS app
       - name: Archive the iOS app
