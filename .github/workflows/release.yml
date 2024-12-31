@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_android:
-    runs-on: ubuntu-latest  # This will run on the latest Ubuntu for Android build
+    runs-on: ubuntu-latest  # Android build runs on Ubuntu
 
     steps:
       - name: Checkout code
@@ -31,20 +31,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # List available Gradle projects (for debugging)
-      - name: List Gradle projects
-        run: ./gradlew projects
+      # List Gradle tasks for debugging
+      - name: List Gradle tasks
+        run: ./gradlew tasks
 
-      # Build the Android APK (no need to reference `PruebaKotlinMultiplatform` if it's the root module)
+      # Build the Android APK (adjust task if necessary based on the task list)
       - name: Build Android APK
-        run: ./gradlew :assembleRelease  # This should work if it's a root project
+        run: ./gradlew :PruebaKotlinMultiplatform:android:assembleRelease
 
-      # Save the APK to a path
+      # Upload APK artifact
       - name: Upload APK artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-apk
-          path: android/build/outputs/apk/release/app-release.apk
+          path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
 
   build_ios:
     runs-on: macos-latest  # iOS build requires macOS runner
@@ -60,9 +60,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Set up Xcode (necessary for iOS builds)
-      - name: Set up Xcode
-        run: sudo xcode-select -s /Applications/Xcode_14.3.app
+      # No need to manually set Xcode
+      # You can skip this step or only set it if needed
+      # - name: Set up Xcode (optional)
+      #   run: sudo xcode-select -s /Applications/Xcode.app
 
       # Cache Gradle dependencies
       - name: Cache Gradle dependencies
@@ -73,20 +74,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # List available Gradle projects (for debugging)
-      - name: List Gradle projects
-        run: ./gradlew projects
+      # List Gradle tasks for debugging
+      - name: List Gradle tasks
+        run: ./gradlew tasks
 
-      # Build the iOS IPA (again, using root module without extra prefixes)
+      # Build the iOS IPA (update to the correct task for iOS)
       - name: Build iOS IPA
-        run: ./gradlew :iosX64Binaries  # Update to match actual task for iOS
+        run: ./gradlew :PruebaKotlinMultiplatform:iosX64Binaries
 
-      # Save the IPA to a path
+      # Upload IPA artifact
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: ios/build/ios/ipa/release/app-release.ipa
+          path: PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
 
   create_release:
     needs: [build_android, build_ios]
@@ -103,5 +104,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            android/build/outputs/apk/release/app-release.apk
-            ios/build/ios/ipa/release/app-release.ipa
+            PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
+            PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
