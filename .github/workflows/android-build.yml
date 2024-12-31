@@ -71,5 +71,5 @@ jobs:
           gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
 
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_TOKEN_PERMISSIONS: "contents: write"
