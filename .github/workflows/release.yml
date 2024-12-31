@@ -1,50 +1,119 @@
-name: Build and Archive iOS App
+name: Build and Release Mobile App
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - "v*.*.*" # Triggers on versioned tags like v1.0.0
 
 jobs:
-  build-ios:
-    runs-on: macos-latest
-
+  android-build:
+    name: Build Android App
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
-          xcode-version: '15.4'
+          distribution: 'zulu'
+          java-version: '11'
 
-      - name: Build and Archive iOS App
-        env:
-          WORKSPACE_PATH: iosApp/iosApp.xcodeproj
-          SCHEME_NAME: iosApp
-          EXPORT_PLIST_PATH: iosApp/ExportOptions.plist
+      - name: Cache Gradle Files
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Build Android APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: app/build/outputs/apk/release/app-release.apk
+
+  ios-build:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up CocoaPods
         run: |
-          mkdir -p build
-          xcodebuild -project $WORKSPACE_PATH \
-            -scheme $SCHEME_NAME \
+          brew install cocoapods
+          pod install
+        working-directory: iosApp
+
+      - name: Build iOS App
+        run: |
+          xcodebuild -workspace iosApp.xcworkspace \
+            -scheme iosApp \
             -sdk iphoneos \
+            -configuration Release \
             -archivePath $PWD/build/iosApp.xcarchive \
-            archive | xcpretty
+            archive
 
       - name: Export IPA
-        env:
-          EXPORT_PLIST_PATH: iosApp/ExportOptions.plist
         run: |
           xcodebuild -exportArchive \
             -archivePath $PWD/build/iosApp.xcarchive \
             -exportPath $PWD/build \
-            -exportOptionsPlist $EXPORT_PLIST_PATH | xcpretty
+            -exportOptionsPlist iosApp/ExportOptions.plist
 
-      - name: Upload Artifact
+      - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ios-app-ipa
+          name: ios-ipa
           path: build/*.ipa
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [android-build, ios-build]
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v3
+        with:
+          name: android-apk
+          path: artifacts
+
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v3
+        with:
+          name: ios-ipa
+          path: artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: "Release ${{ github.ref_name }}"
+          body: |
+            🎉 New release is available! 🎉
+
+            ## Changes:
+            - Include release notes or changelog here.
+          draft: false
+          prerelease: false
+
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/app-release.apk
+          asset_name: app-release.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload IPA to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/*.ipa
+          asset_name: app-release.ipa
+          asset_content_type: application/octet-stream
