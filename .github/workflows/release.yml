@@ -47,6 +47,7 @@ jobs:
         run: |
           WORKSPACE_PATH=$(find iosApp -name "*.xcworkspace" -print -quit)
           PROJECT_PATH=$(find iosApp -name "*.xcodeproj" -print -quit)
+          SCHEME_NAME="iosApp" # Replace with your actual scheme name
 
           if [ -n "$WORKSPACE_PATH" ]; then
             echo "workspace_path=$WORKSPACE_PATH" >> $GITHUB_ENV
@@ -57,14 +58,20 @@ jobs:
             exit 1
           fi
 
+          if [ -z "$SCHEME_NAME" ]; then
+            echo "Scheme name is required to build the project."
+            exit 1
+          fi
+
+          echo "scheme_name=$SCHEME_NAME" >> $GITHUB_ENV
           echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
 
       - name: Archive the iOS app
         run: |
           if [ -n "$WORKSPACE_PATH" ]; then
-            xcodebuild -workspace $WORKSPACE_PATH -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
+            xcodebuild -workspace $WORKSPACE_PATH -scheme $scheme_name -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
           else
-            xcodebuild -project $PROJECT_PATH -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
+            xcodebuild -project $workspace_path -scheme $scheme_name -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
           fi
 
       - name: Export the IPA
