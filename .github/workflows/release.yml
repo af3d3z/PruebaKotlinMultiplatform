@@ -114,7 +114,6 @@ jobs:
           name: PruebaKotlinMultiplatform-app-release-apk
 
       # Download iOS IPA artifact
-      - name: Download iOS IPA artifact
         uses: actions/download-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
