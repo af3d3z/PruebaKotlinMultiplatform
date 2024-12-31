@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-apk
-          path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
+          path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/*.apk
 
   build_ios:
     runs-on: macos-latest
@@ -86,9 +86,6 @@ jobs:
       # Archive the app and build the IPA using xcodebuild
       - name: Build and export iOS IPA
         run: |
-          # Clean the previous build
-          xcodebuild clean -workspace ${{ env.workspace_path }} -scheme composeApp -sdk iphoneos
-
           # Archive the app
           xcodebuild -workspace ${{ env.workspace_path }} -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
 
