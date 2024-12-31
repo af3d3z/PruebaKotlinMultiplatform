@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - 'v*'  # Trigger on tag creation
 
 jobs:
   build_android:
@@ -33,21 +33,26 @@ jobs:
       - name: Build Android APK
         run: ./gradlew assembleRelease
 
-      # List files in the build output directory (to check if the APK was created)
-      - name: List files in build output (Android)
-        run: find . -name "*.apk"
+      # List files in the build output directory to confirm the APK is created
+      - name: List APK files in build output directory
+        run: ls ./androidApp/build/outputs/apk/release/
 
-      # Upload the APK artifact
+      # Rename the APK file (only if it's present)
+      - name: Rename APK file
+        run: |
+          if [ -f ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk ]; then
+            mv ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk ./androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk
+          else
+            echo "APK file not found, skipping rename step"
+            exit 1
+          fi
+
+      # Upload the renamed APK artifact
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v3
         with:
           name: android-app-release-apk
-          path: ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk # Adjust this path to your actual APK path
-
-        # Rename APK file (optional step)
-      - name: Rename APK file
-        run: mv ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk ./androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk
-
+          path: ./androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk
 
   release_android:
     needs: build_android
@@ -67,14 +72,18 @@ jobs:
       - name: List files in the downloaded directory (Android)
         run: ls ./androidApp/build/outputs/apk/release/
 
-      # Create Release on GitHub
+      # Authenticate with GitHub CLI using PAT (if needed)
+      - name: Authenticate with GitHub CLI
+        run: gh auth login --with-token < ${{ secrets.GH_TOKEN }}
+
+      # Extract the tag name from GITHUB_REF and create a GitHub release
       - name: Create Release on GitHub
         run: |
-          #echo $GITHUB_REF
-          #RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')          
-          # Create the release with the APK file
-          gh release create android-release ././androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk --title "Android release" --notes "Automated release of APK file"
+          # Extract the tag name by removing the "refs/tags/" prefix
+          RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
+          
+          # Create the release with the renamed APK file
+          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
 
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          GITHUB_TOKEN_PERMISSIONS: "contents: write"
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
