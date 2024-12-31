@@ -1,101 +1,50 @@
-name: Build and Release iOS IPA
+name: Build and Archive iOS App
 
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build_ios:
+  build-ios:
     runs-on: macos-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Set up Xcode
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '15.4'
 
-      # List files in the iosApp directory to verify that the project/workspace files exist
-      - name: List files in iosApp directory
+      - name: Build and Archive iOS App
+        env:
+          WORKSPACE_PATH: iosApp/iosApp.xcodeproj
+          SCHEME_NAME: iosApp
+          EXPORT_PLIST_PATH: iosApp/ExportOptions.plist
         run: |
-          echo "Listing files in iosApp directory:"
-          ls -alh iosApp
+          mkdir -p build
+          xcodebuild -project $WORKSPACE_PATH \
+            -scheme $SCHEME_NAME \
+            -sdk iphoneos \
+            -archivePath $PWD/build/iosApp.xcarchive \
+            archive | xcpretty
 
-      # Find the correct iOS project or workspace file
-      - name: Set paths for iOS build
+      - name: Export IPA
+        env:
+          EXPORT_PLIST_PATH: iosApp/ExportOptions.plist
         run: |
-          # Search for .xcworkspace and .xcodeproj files in the correct folder
-          WORKSPACE_PATH=$(find iosApp -name "*.xcworkspace" -print -quit)
-          PROJECT_PATH=$(find iosApp -name "*.xcodeproj" -print -quit)
-          
-          if [ -n "$WORKSPACE_PATH" ]; then
-            echo "Using workspace: $WORKSPACE_PATH"
-            echo "workspace_path=$WORKSPACE_PATH" >> $GITHUB_ENV
-          elif [ -n "$PROJECT_PATH" ]; then
-            echo "Using project: $PROJECT_PATH"
-            echo "workspace_path=$PROJECT_PATH" >> $GITHUB_ENV
-          else
-            echo "No .xcworkspace or .xcodeproj file found in iosApp. Please ensure the correct project files are present."
-            exit 1
-          fi
+          xcodebuild -exportArchive \
+            -archivePath $PWD/build/iosApp.xcarchive \
+            -exportPath $PWD/build \
+            -exportOptionsPlist $EXPORT_PLIST_PATH | xcpretty
 
-          echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
-
-      # List schemes in the iOS project to ensure "iosApp" exists
-      - name: List schemes in iOS project
-        run: |
-          xcodebuild -list -project $workspace_path
-
-      # Archive the iOS app
-      - name: Archive the iOS app
-        run: |
-          # Attempt to build with found workspace or project
-          if [ -n "$workspace_path" ]; then
-            # Use workspace if found
-            xcodebuild -workspace $workspace_path -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
-          else
-            # Use project if workspace not found
-            xcodebuild -project $workspace_path -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
-          fi
-
-      # Export the IPA from the archive
-      - name: Export the IPA
-        run: |
-          xcodebuild -exportArchive -archivePath $PWD/build/iosApp.xcarchive -exportPath $PWD/build/iosApp.ipa -exportOptionsPlist $export_plist_path
-
-      # Upload the IPA artifact
-      - name: Upload iOS IPA artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ios-app-release-ipa
-          path: $PWD/build/iosApp.ipa
-
-  release_ios:
-    needs: build_ios  # Ensure the release happens after the build job
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Download the iOS IPA artifact
-      - name: Download iOS IPA artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: ios-app-release-ipa
-          path: ./iosApp/build/
-
-      # Create Release on GitHub
-      - name: Create Release on GitHub
-        run: |
-          RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
-          
-          # Create the release with the IPA file
-          gh release create $RELEASE_TAG ./iosApp/build/iosApp.ipa --title "Release $RELEASE_TAG" --notes "Automated release of IPA file"
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ios-app-ipa
+          path: build/*.ipa
