@@ -50,9 +50,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Xcode using the correct apple-actions/setup-xcode action
+      # Set up Xcode (Correct action)
       - name: Set up Xcode
-        uses: apple-actions/setup-xcode@v3
+        uses: actions/setup-xcode@v3
         with:
           xcode-version: '15.4'
 
@@ -98,4 +98,8 @@ jobs:
 
       - name: Create Release on GitHub
         run: |
-          RELEASE_TAG=$(ech
+          RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
+          gh release create $RELEASE_TAG ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk ./composeApp.ipa --title "Release $RELEASE_TAG" --notes "Automated release of APK and IPA files"
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
