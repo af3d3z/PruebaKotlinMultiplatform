@@ -37,7 +37,7 @@ jobs:
 
       # Build the Android APK (adjust task if necessary based on the task list)
       - name: Build Android APK
-        run: ./gradlew :android:assembleRelease
+        run: ./gradlew :composeApp:android:assembleRelease
 
       # Upload APK artifact
       - name: Upload APK artifact
@@ -80,7 +80,7 @@ jobs:
 
       # Build the iOS IPA (update to the correct task for iOS)
       - name: Build iOS IPA
-        run: ./gradlew :iosX64Binaries
+        run: ./gradlew :composeApp:iosX64Binaries
 
       # Upload IPA artifact
       - name: Upload IPA artifact
