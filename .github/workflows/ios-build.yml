@@ -51,20 +51,17 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        uses: gh actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.sha }}
           release_name: "Release ${{ github.sha }}"
           body: "Release of iOS app"
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload IPA to GitHub Release
-        uses: gh actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: build/*.ipa
           asset_name: iosApp-${{ github.sha }}.ipa
-          asset_content_type: application/octet-stream
