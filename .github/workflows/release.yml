@@ -42,6 +42,7 @@ jobs:
           name: PruebaKotlinMultiplatform-app-release-apk
           path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
 
+ 
   build_ios:
     runs-on: macos-latest  # iOS build requires macOS runner
 
@@ -56,6 +57,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # No need to manually set Xcode
+      # You can skip this step or only set it if needed
+      # - name: Set up Xcode (optional)
+      #   run: sudo xcode-select -s /Applications/Xcode.app
+
       # Cache Gradle dependencies
       - name: Cache Gradle dependencies
         uses: actions/cache@v3
@@ -65,20 +71,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Check if the xcworkspace exists
-      - name: Check for xcworkspace file
-        run: |
-          if [ ! -f "PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" ]; then
-            echo "Error: composeApp.xcworkspace not found!"
-            exit 1
-          else
-            echo "composeApp.xcworkspace found."
-          fi
+      # List Gradle tasks for debugging
+      - name: List Gradle tasks
+        run: ./gradlew tasks
 
-      # Build the iOS binaries
-      - name: Build iOS binaries
+      # Build the iOS IPA (update to the correct task for iOS)
+      - name: Build iOS IPA
         run: ./gradlew :composeApp:iosX64Binaries
 
+      # Upload IPA artifact
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: PruebaKotlinMultiplatform-app-release-ipa
+          path: PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
+
+  
       # List files for iOS build to locate the IPA
       - name: List files for iOS build
         run: find . -type f -name "*.ipa"
