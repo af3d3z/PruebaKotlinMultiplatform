@@ -70,7 +70,7 @@ jobs:
 
           echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
 
-      # List schemes in the project to verify the scheme name
+      # List schemes in the iOS project to ensure "iosApp" exists
       - name: List schemes in iOS project
         run: |
           xcodebuild -list -project $workspace_path
@@ -79,19 +79,25 @@ jobs:
       - name: Archive the iOS app
         run: |
           # Attempt to build with found workspace or project
-          xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive || xcodebuild -project $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
+          if [ -n "$WORKSPACE_PATH" ]; then
+            # Use workspace if found
+            xcodebuild -workspace $workspace_path -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
+          else
+            # Use project if workspace not found
+            xcodebuild -project $workspace_path -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
+          fi
 
       # Export the IPA from the archive
       - name: Export the IPA
         run: |
-          xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist $export_plist_path
+          xcodebuild -exportArchive -archivePath $PWD/build/iosApp.xcarchive -exportPath $PWD/build/iosApp.ipa -exportOptionsPlist $export_plist_path
 
       # Upload the IPA artifact
       - name: Upload iOS IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: $PWD/build/composeApp.ipa
+          path: $PWD/build/iosApp.ipa
 
   release:
     needs: [build_android, build_ios]  # Ensure the release happens after both builds
@@ -115,7 +121,7 @@ jobs:
           RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
           
           # Create the release with both APK and IPA files
-          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/app-release-unsigned.apk ./iosApp/build/composeApp.ipa --title "Release $RELEASE_TAG" --notes "Automated release of APK and IPA files"
+          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/app-release-unsigned.apk ./iosApp/build/iosApp.ipa --title "Release $RELEASE_TAG" --notes "Automated release of APK and IPA files"
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
