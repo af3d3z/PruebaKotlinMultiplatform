@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*" # Triggers on versioned tags like v1.0.0
+  workflow_dispatch: # Enables manual triggering from the GitHub Actions interface
 
 jobs:
   android-build:
