@@ -68,7 +68,7 @@ jobs:
           RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
           
           # Create the release with the APK file
-          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/app-release-unsigned.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
+          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/Composeapp-release-unsigned.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
