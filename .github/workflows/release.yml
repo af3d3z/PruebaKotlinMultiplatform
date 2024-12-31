@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Android build runs on Ubuntu
 
     steps:
       - name: Checkout code
@@ -31,13 +31,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Build the Android APK
+      # Build the Android APK (adjust task if necessary based on the task list)
       - name: Build Android APK
-        run: ./gradlew :assembleRelease
-
-      # List files in Android build output
-      - name: List files in Android build output
-        run: find PruebaKotlinMultiplatform/android/build/outputs -type f
+        run: ./gradlew :assembleRelease  # Adjust based on your output from List Gradle tasks
 
       # Upload APK artifact
       - name: Upload APK artifact
@@ -46,9 +42,8 @@ jobs:
           name: PruebaKotlinMultiplatform-app-release-apk
           path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
 
-
   build_ios:
-    runs-on: macos-latest
+    runs-on: macos-latest  # iOS build requires macOS runner
 
     steps:
       - name: Checkout code
@@ -70,25 +65,51 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Install Xcode dependencies (including CocoaPods)
-      - name: Install CocoaPods dependencies
+      # Check if the xcworkspace exists
+      - name: Check for xcworkspace file
         run: |
-          sudo gem install cocoapods
-          pod install --project-directory=PruebaKotlinMultiplatform/ios
+          if [ ! -f "PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" ]; then
+            echo "Error: composeApp.xcworkspace not found!"
+            exit 1
+          else
+            echo "composeApp.xcworkspace found."
+          fi
 
-      # Build the iOS IPA using xcodebuild
-      - name: Build iOS IPA
+      # Build the iOS binaries
+      - name: Build iOS binaries
+        run: ./gradlew :composeApp:iosX64Binaries
+
+      # List files for iOS build to locate the IPA
+      - name: List files for iOS build
+        run: find . -type f -name "*.ipa"
+
+      # Package iOS app to IPA
+      - name: Package iOS app to IPA
         run: |
           xcodebuild -workspace PruebaKotlinMultiplatform/ios/composeApp.xcworkspace -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
           xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist $PWD/ios/ExportOptions.plist
-
-      # List files in iOS build output
-      - name: List files in iOS build output
-        run: find $PWD/build -type f
 
       # Upload IPA artifact
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: $PWD/build/composeApp.ipa
+          path: $PWD/build/composeApp.ipa  # Update path based on where IPA is created
+
+  create_release:
+    needs: [build_android, build_ios]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
+            PruebaKotlinMultiplatform/ios/build/composeApp.ipa
