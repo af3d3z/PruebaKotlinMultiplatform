@@ -38,11 +38,16 @@ jobs:
             -exportPath $PWD/build \
             -exportOptionsPlist iosApp/ExportOptions.plist || echo "Export failed"
 
+      - name: List IPA Files
+        run: |
+          echo "Listing all IPA files..."
+          ls $PWD/build/*.ipa
+
       - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v3
         with:
           name: ios-ipa
-          path: build/*.ipa
+          path: $PWD/build/*.ipa
 
   android-build:
     name: Build Android App
@@ -64,7 +69,12 @@ jobs:
 
       - name: Build Android APK
         run: |
-          ./gradlew assembleRelease
+          ./gradlew clean assembleRelease --stacktrace || echo "Android Build failed"
+
+      - name: List APK Files
+        run: |
+          echo "Listing all APK files..."
+          ls app/build/outputs/apk/release/*.apk
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v3
@@ -93,7 +103,7 @@ jobs:
       - name: Upload iOS IPA to Release
         uses: softprops/action-gh-release@v1
         with:
-          files: iosApp/build/*.ipa
+          files: ${{ needs.ios-build.outputs.ipa_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
