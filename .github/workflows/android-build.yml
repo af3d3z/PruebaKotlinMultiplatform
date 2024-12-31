@@ -44,6 +44,11 @@ jobs:
           name: android-app-release-apk
           path: ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk # Adjust this path to your actual APK path
 
+        # Rename APK file (optional step)
+      - name: Rename APK file
+        run: mv ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk ./androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk
+
+
   release_android:
     needs: build_android
     runs-on: ubuntu-latest
@@ -68,7 +73,7 @@ jobs:
           #echo $GITHUB_REF
           #RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')          
           # Create the release with the APK file
-          gh release create android-release ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk --title "Android release" --notes "Automated release of APK file"
+          gh release create android-release ././androidApp/build/outputs/apk/release/PruebaKotlinMultiplatform.apk --title "Android release" --notes "Automated release of APK file"
 
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
