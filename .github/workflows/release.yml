@@ -51,8 +51,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Use apple-actions/setup-xcode instead of actions/setup-xcode
       - name: Set up Xcode
-        uses: actions/setup-xcode@v3
+        uses: apple-actions/setup-xcode@v3
         with:
           xcode-version: '15.4'
 
@@ -78,4 +79,3 @@ jobs:
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
           path: $PWD/build/composeApp.ipa
-
