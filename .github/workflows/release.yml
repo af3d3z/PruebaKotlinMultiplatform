@@ -1,85 +1,42 @@
-name: Build and Release Kotlin Multiplatform Apps (Android & iOS)
+name: Build iOS and Android App
 
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build_android:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Set up JDK 17 (required for Android builds)
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # Set up Android SDK
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 33
-          target: android-33
-          gradle: true
-
-      # Build the Android APK
-      - name: Build Android APK
-        run: ./gradlew assembleRelease
-
-      # List files in the build output directory (to check if the APK was created)
-      - name: List files in build output (Android)
-        run: find . -name "*.apk"
-
-      # Upload the APK artifact
-      - name: Upload Android APK artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: PruebaKotlinMultiplatform-app-release-apk
-          path: ./androidApp/build/outputs/apk/release/app-release-unsigned.apk  # Adjust this path if necessary
-
+  # iOS Build
   build_ios:
     runs-on: macos-latest
+
+    env:
+      workspace_path: iosApp/iosApp.xcodeproj  # Replace with your actual project/workspace path
+      export_plist_path: iosApp/ExportOptions.plist  # Replace with your ExportOptions.plist path
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      # Find the correct iOS project or workspace file
-      - name: Set paths for iOS build
+      # Set up Xcode
+      - name: Set up Xcode
         run: |
-          # Search for .xcworkspace and .xcodeproj files in the correct folder
-          WORKSPACE_PATH=$(find iosApp -name "*.xcworkspace" -print -quit)
-          PROJECT_PATH=$(find iosApp -name "*.xcodeproj" -print -quit)
-          
-          if [ -n "$WORKSPACE_PATH" ]; then
-            echo "Using workspace: $WORKSPACE_PATH"
-            echo "workspace_path=$WORKSPACE_PATH" >> $GITHUB_ENV
-          elif [ -n "$PROJECT_PATH" ]; then
-            echo "Using project: $PROJECT_PATH"
-            echo "workspace_path=$PROJECT_PATH" >> $GITHUB_ENV
-          else
-            echo "No .xcworkspace or .xcodeproj file found in iosApp. Please ensure the correct project files are present."
-            exit 1
-          fi
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
-          echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
-
-      # List schemes in the iOS project to ensure "iosApp" exists
-      - name: List schemes in iOS project
+      # Install dependencies for iOS
+      - name: Install dependencies for iOS
         run: |
-          xcodebuild -list -project $workspace_path
+          brew install cocoapods
+          pod install --project-directory=iosApp
 
-      # Archive the iOS app
-      - name: Archive the iOS app
+      # Build the iOS app
+      - name: Build iOS App
         run: |
-          # Attempt to build with found workspace or project
-          if [ -n "$WORKSPACE_PATH" ]; then
+          if [ -f "$workspace_path" ]; then
             # Use workspace if found
             xcodebuild -workspace $workspace_path -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
           else
@@ -87,41 +44,53 @@ jobs:
             xcodebuild -project $workspace_path -scheme iosApp -sdk iphoneos -archivePath $PWD/build/iosApp.xcarchive archive
           fi
 
-      # Export the IPA from the archive
-      - name: Export the IPA
+      # Export the IPA from Xcode Archive
+      - name: Export IPA from Xcode Archive
         run: |
-          xcodebuild -exportArchive -archivePath $PWD/build/iosApp.xcarchive -exportPath $PWD/build/iosApp.ipa -exportOptionsPlist $export_plist_path
+          xcodebuild -exportArchive -archivePath $PWD/build/iosApp.xcarchive -exportOptionsPlist $export_plist_path -exportPath $PWD/build
 
-      # Upload the IPA artifact
-      - name: Upload iOS IPA artifact
+      # Upload the iOS build artifact
+      - name: Upload iOS Build Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: PruebaKotlinMultiplatform-app-release-ipa
-          path: $PWD/build/iosApp.ipa
+          name: iosApp.ipa
+          path: $PWD/build/*.ipa
 
-  release:
-    needs: [build_android, build_ios]  # Ensure the release happens after both builds
+  # Android Build
+  build_android:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Download Android APK artifact
-        uses: actions/download-artifact@v3
+      # Set up Java JDK
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
         with:
-          name: PruebaKotlinMultiplatform-app-release-apk
+          java-version: '11'
 
-      - name: Download iOS IPA artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: PruebaKotlinMultiplatform-app-release-ipa
+      # Set up Android SDK
+      - name: Set up Android SDK
+        uses: react-native-community/setup-android@v2
 
-      - name: Create Release on GitHub
+      # Install Android dependencies
+      - name: Install dependencies for Android
         run: |
-          RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
-          
-          # Create the release with both APK and IPA files
-          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/app-release-unsigned.apk ./iosApp/build/iosApp.ipa --title "Release $RELEASE_TAG" --notes "Automated release of APK and IPA files"
+          cd android
+          ./gradlew clean
+          ./gradlew dependencies
 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build the Android app
+      - name: Build Android App
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      # Upload the Android build artifact (APK)
+      - name: Upload Android Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: androidApp.apk
+          path: android/app/build/outputs/apk/release/*.apk
