@@ -11,29 +11,14 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
       # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Set up Node.js (if your project uses Node.js)
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'  # Specify the required Node.js version
-
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          if [ -f "package.json" ]; then
-            npm install
-          fi
-
   android_build:
     runs-on: ubuntu-latest
     needs: build
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -58,7 +43,7 @@ jobs:
 
       # Upload APK to GitHub Releases
       - name: Upload APK to GitHub Releases
-        uses: ghactiond/gh-release@v1
+        uses: gh actiond/gh-release@v1
         with:
           file: app/build/outputs/apk/release/app-release.apk
           tag: ${{ github.ref_name }}
@@ -68,7 +53,6 @@ jobs:
   ios_build:
     runs-on: macos-latest
     needs: build
-
     steps:
       # Checkout code
       - name: Checkout code
@@ -81,34 +65,17 @@ jobs:
       # Build the iOS app (IPA)
       - name: Build iOS IPA
         run: |
-          # Set default workspace or project
-          if [ -n "$WORKSPACE_PATH" ] && [ -f "$WORKSPACE_PATH" ]; then
-            echo "Using workspace: $WORKSPACE_PATH"
-            BUILD_COMMAND="xcodebuild -workspace \"$WORKSPACE_PATH\""
-          elif [ -n "$PROJECT_PATH" ] && [ -f "$PROJECT_PATH" ]; then
-            echo "Using project: $PROJECT_PATH"
-            BUILD_COMMAND="xcodebuild -project \"$PROJECT_PATH\""
-          else
-            echo "Error: Neither WORKSPACE_PATH nor PROJECT_PATH is defined or valid."
-            exit 1
-          fi
+          # Use xcodebuild to build the iOS app
+          xcodebuild -workspace MyApp.xcworkspace -scheme MyApp -sdk iphoneos -configuration Release clean build
 
-          # Set default destination if not provided
-          if [ -z "$DESTINATION" ]; then
-            DESTINATION="platform=iOS,device=iphone"
-          fi
-
-          # Build and archive the app
-          $BUILD_COMMAND -scheme iosApp -sdk iphoneos -destination "$DESTINATION" -archivePath "$PWD/build/iosApp.xcarchive" archive
-
-          # Export IPA
-          xcodebuild -exportArchive -archivePath "$PWD/build/iosApp.xcarchive" -exportPath "$PWD/build/iosApp.ipa" -exportOptionsPlist exportOptions.plist
+          # Export the IPA
+          xcodebuild -exportArchive -archivePath "$PWD/build/MyApp.xcarchive" -exportPath "$PWD/build" -exportOptionsPlist exportOptions.plist
 
       # Upload IPA to GitHub Releases
       - name: Upload IPA to GitHub Releases
-        uses: ghactiond/gh-release@v1
+        uses: gh actiond/gh-release@v1
         with:
-          file: build/iosApp.ipa
+          file: build/MyApp.ipa
           tag: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
