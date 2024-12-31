@@ -50,21 +50,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Ensure correct paths for either .xcworkspace or .xcodeproj
+      # Find the correct iOS project or workspace file
       - name: Set paths for iOS build
         run: |
-          # Check if xcworkspace exists
-          if [ -f "PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" ]; then
-            echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" >> $GITHUB_ENV
+          # Search for .xcworkspace and .xcodeproj files
+          WORKSPACE_PATH=$(find PruebaKotlinMultiplatform/ios -name "*.xcworkspace" -print -quit)
+          PROJECT_PATH=$(find PruebaKotlinMultiplatform/ios -name "*.xcodeproj" -print -quit)
+          
+          if [ -n "$WORKSPACE_PATH" ]; then
+            echo "Using workspace: $WORKSPACE_PATH"
+            echo "workspace_path=$WORKSPACE_PATH" >> $GITHUB_ENV
+          elif [ -n "$PROJECT_PATH" ]; then
+            echo "Using project: $PROJECT_PATH"
+            echo "workspace_path=$PROJECT_PATH" >> $GITHUB_ENV
           else
-            echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcodeproj" >> $GITHUB_ENV
+            echo "No .xcworkspace or .xcodeproj file found. Please ensure the correct project files are present."
+            exit 1
           fi
+
           echo "export_plist_path=PruebaKotlinMultiplatform/ios/ExportOptions.plist" >> $GITHUB_ENV
 
       # Archive the iOS app
       - name: Archive the iOS app
         run: |
-          # Attempt to build with workspace, fallback to project if workspace doesn't exist
+          # Attempt to build with found workspace or project
           xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive || xcodebuild -project $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
 
       # Export the IPA from the archive
