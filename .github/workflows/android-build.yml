@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: android-app-release-apk
-          path: ./androidApp/build/outputs/apk/release/app-release-unsigned.apk  # Adjust this path to your actual APK path
+          path: ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk # Adjust this path to your actual APK path
 
   release_android:
     needs: build_android
