@@ -1,81 +1,99 @@
-name: Build and Release Kotlin Multiplatform Apps (Android & iOS)
+name: Build and Upload iOS and Android App
 
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build_android:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Set up JDK 17 (required for Android builds)
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # Set up Android SDK
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 33
-          target: android-33
-          gradle: true
-
-      # Build the Android APK
-      - name: Build Android APK
-        run: ./gradlew assembleRelease
-
-      # List files in the build output directory (to check if the APK was created)
-      - name: List files in build output (Android)
-        run: find . -name "*.apk"
-
-      # Upload the APK artifact
-      - name: Upload Android APK artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: PruebaKotlinMultiplatform-app-release-apk
-          path: ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk
-
   build_ios:
     runs-on: macos-latest
     
     steps:
+      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Use apple-actions/setup-xcode instead of actions/setup-xcode
+      # Step 2: Set up Xcode (no need for `apple-actions/setup-xcode`, just use `actions/setup-xcode`)
       - name: Set up Xcode
-        uses: apple-actions/setup-xcode@v3
+        uses: actions/setup-xcode@v3
         with:
-          xcode-version: '15.4'
+          xcode-version: '15.4'  # Set the correct Xcode version for your project (adjust as needed)
 
-      # Ensure workspace and export options paths are correctly set
+      # Step 3: Set environment variables for workspace and export plist paths
       - name: Set workspace and export plist paths
         run: |
           echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" >> $GITHUB_ENV
           echo "export_plist_path=PruebaKotlinMultiplatform/ios/ExportOptions.plist" >> $GITHUB_ENV
 
-      # Archive the iOS app
-      - name: Archive the app
+      # Step 4: Build and archive the iOS app
+      - name: Build iOS app
         run: |
+          # Clean up previous builds if any
+          xcodebuild clean -workspace $workspace_path -scheme composeApp -sdk iphoneos
+
+          # Archive the iOS app
           xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
-          
-      # Export the IPA from the archive
-      - name: Export the IPA
+
+      # Step 5: Export the IPA file
+      - name: Export IPA
         run: |
           xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist $export_plist_path
 
-      # Upload the IPA artifact
+      # Step 6: List IPA files in the build directory
+      - name: List IPA files
+        run: |
+          echo "Listing IPA files in build directory:"
+          ls -al $PWD/build/*.ipa
+
+      # Step 7: Upload the IPA file as an artifact
       - name: Upload iOS IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
           path: $PWD/build/composeApp.ipa
+          if-no-files-found: warn
+
+  build_android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up JDK for Android build
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adoptopenjdk'
+          version: '17'
+
+      # Step 3: Set up Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android-sdk@v2
+        with:
+          api-level: '33'  # Update as necessary
+          build-tools: '33.0.0'  # Update as necessary
+          target-sdk: '33'
+
+      # Step 4: Build the Android APK
+      - name: Build APK
+        run: ./gradlew assembleRelease
+
+      # Step 5: List APK files in the Android build directory
+      - name: List APK files
+        run: |
+          echo "Listing APK files in Android build directory:"
+          ls -al PruebaKotlinMultiplatform/android/build/outputs/apk/release/*.apk
+
+      # Step 6: Upload the APK as an artifact
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: PruebaKotlinMultiplatform-app-release-apk
+          path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
