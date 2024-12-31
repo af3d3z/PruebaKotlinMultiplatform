@@ -31,16 +31,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Build the Android APK
+      # List available Gradle projects (for debugging)
+      - name: List Gradle projects
+        run: ./gradlew projects
+
+      # Build the Android APK (no need to reference `PruebaKotlinMultiplatform` if it's the root module)
       - name: Build Android APK
-        run: ./gradlew :PruebaKotlinMultiplatform:assembleRelease
+        run: ./gradlew :assembleRelease  # This should work if it's a root project
 
       # Save the APK to a path
       - name: Upload APK artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-apk
-          path: PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
+          path: android/build/outputs/apk/release/app-release.apk
 
   build_ios:
     runs-on: macos-latest  # iOS build requires macOS runner
@@ -69,16 +73,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Build the iOS IPA
+      # List available Gradle projects (for debugging)
+      - name: List Gradle projects
+        run: ./gradlew projects
+
+      # Build the iOS IPA (again, using root module without extra prefixes)
       - name: Build iOS IPA
-        run: ./gradlew :PruebaKotlinMultiplatform:iosArm64XcodeBuild
+        run: ./gradlew :iosX64Binaries  # Update to match actual task for iOS
 
       # Save the IPA to a path
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
+          path: ios/build/ios/ipa/release/app-release.ipa
 
   create_release:
     needs: [build_android, build_ios]
@@ -95,5 +103,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
-            PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
+            android/build/outputs/apk/release/app-release.apk
+            ios/build/ios/ipa/release/app-release.ipa
