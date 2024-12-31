@@ -50,9 +50,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Xcode using the official GitHub action
+      # Set up Xcode using the correct apple-actions/setup-xcode action
       - name: Set up Xcode
-        uses: actions/setup-xcode@v3
+        uses: apple-actions/setup-xcode@v3
         with:
           xcode-version: '15.4'
 
@@ -80,7 +80,7 @@ jobs:
           path: $PWD/build/composeApp.ipa
 
   release:
-    needs: [build_android, build_ios]  # Make sure the release step happens after both builds are done
+    needs: [build_android, build_ios]  # Ensure the release happens after both builds
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -98,8 +98,4 @@ jobs:
 
       - name: Create Release on GitHub
         run: |
-          RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
-          gh release create $RELEASE_TAG ./composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk ./composeApp.ipa --title "Release $RELEASE_TAG" --notes "Automated release of APK and IPA files"
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG=$(ech
