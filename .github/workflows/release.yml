@@ -56,6 +56,12 @@ jobs:
         with:
           xcode-version: '15.4'
 
+      # List files in the iosApp directory to verify that the project/workspace files exist
+      - name: List files in iosApp directory
+        run: |
+          echo "Listing files in iosApp directory:"
+          ls -alh iosApp
+
       # Find the correct iOS project or workspace file
       - name: Set paths for iOS build
         run: |
@@ -75,6 +81,11 @@ jobs:
           fi
 
           echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
+
+      # List the schemes in the iOS project to ensure "iosApp" exists
+      - name: List schemes in iOS project
+        run: |
+          xcodebuild -list -project $workspace_path
 
       # Archive the iOS app
       - name: Archive the iOS app
@@ -112,11 +123,14 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-apk
+          path: ./androidApp/build/outputs/apk/release/
 
       # Download iOS IPA artifact
+      - name: Download iOS IPA artifact
         uses: actions/download-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
+          path: ./iosApp/build/
 
       # Create Release on GitHub
       - name: Create Release on GitHub
