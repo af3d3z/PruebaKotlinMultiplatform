@@ -50,13 +50,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Xcode
+      # Set up Xcode using the official GitHub action
       - name: Set up Xcode
-        uses: apple-actions/setup-xcode@v3
+        uses: actions/setup-xcode@v3
         with:
           xcode-version: '15.4'
 
-      # Ensure workspace and export options paths are correctly set
+      # Ensure workspace and export plist paths are correctly set
       - name: Set workspace and export plist paths
         run: |
           echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" >> $GITHUB_ENV
@@ -66,11 +66,11 @@ jobs:
       - name: Archive the app
         run: |
           xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
-          
+
       # Export the IPA from the archive
       - name: Export the IPA
         run: |
-          xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build -exportOptionsPlist $export_plist_path
+          xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist $export_plist_path
 
       # Upload the IPA artifact
       - name: Upload iOS IPA artifact
