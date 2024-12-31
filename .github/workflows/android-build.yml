@@ -72,7 +72,3 @@ jobs:
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-        permissions:
-          contents: write  # Permission to create releases
-          id-token: write  # This might be required for release creation in some cases
