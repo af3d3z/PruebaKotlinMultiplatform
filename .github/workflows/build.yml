@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - main
-  tags:
-    - 'v*'
+    tags:
+      - 'v*'
 
 jobs:
   build_android:
@@ -106,4 +106,3 @@ jobs:
           distribution_group: your-distribution-group
           apk_path: app/build/outputs/apk/release/app-release.apk
           ipa_path: app/build/ios/ipa/release/app-release.ipa
-
