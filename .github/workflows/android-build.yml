@@ -65,10 +65,10 @@ jobs:
       # Create Release on GitHub
       - name: Create Release on GitHub
         run: |
-          echo $GITHUB_REF
-          RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')          
+          #echo $GITHUB_REF
+          #RELEASE_TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')          
           # Create the release with the APK file
-          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk --title "Release $RELEASE_TAG" --notes "Automated release of APK file"
+          gh release create $RELEASE_TAG ./androidApp/build/outputs/apk/release/composeApp-release-unsigned.apk --title "Android release" --notes "Automated release of APK file"
 
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
