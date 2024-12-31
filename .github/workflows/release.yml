@@ -50,12 +50,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Xcode (Correct action)
-      - name: Set up Xcode
-        uses: actions/setup-xcode@v3
-        with:
-          xcode-version: '15.4'
-
       # Ensure workspace and export plist paths are correctly set
       - name: Set workspace and export plist paths
         run: |
@@ -63,7 +57,7 @@ jobs:
           echo "export_plist_path=PruebaKotlinMultiplatform/ios/ExportOptions.plist" >> $GITHUB_ENV
 
       # Archive the iOS app
-      - name: Archive the app
+      - name: Archive the iOS app
         run: |
           xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
 
