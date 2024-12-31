@@ -44,12 +44,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up CocoaPods
+      - name: Set up Xcode
         run: |
-          brew install cocoapods
-          pod install
-        working-directory: iosApp
-
+          sudo xcode-select -s /Applications/Xcode_14.0.app/Contents/Developer
+          xcodebuild -version # Check Xcode version
+          
       - name: Build iOS App
         run: |
           xcodebuild -workspace iosApp.xcworkspace \
