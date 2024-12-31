@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: android-app-release-apk
-          path: ./androidApp/build/outputs/apk/release/app-release-unsigned.apk  # Adjust this path
+          path: ./androidApp/build/outputs/apk/release/app-release-unsigned.apk  # Adjust this path to match your build output
 
   release_android:
     needs: build_android  # Ensure the release happens after the build job
@@ -57,6 +57,10 @@ jobs:
         with:
           name: android-app-release-apk
           path: ./androidApp/build/outputs/apk/release/
+
+      # List files in the downloaded directory to verify the APK is available
+      - name: List files in the downloaded directory (Android)
+        run: ls ./androidApp/build/outputs/apk/release/
 
       # Create Release on GitHub
       - name: Create Release on GitHub
