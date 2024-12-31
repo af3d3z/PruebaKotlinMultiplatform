@@ -70,6 +70,11 @@ jobs:
 
           echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
 
+      # List schemes in the project to verify the scheme name
+      - name: List schemes in iOS project
+        run: |
+          xcodebuild -list -project $workspace_path
+
       # Archive the iOS app
       - name: Archive the iOS app
         run: |
