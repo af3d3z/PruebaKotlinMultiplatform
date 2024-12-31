@@ -47,15 +47,16 @@ jobs:
         run: |
           WORKSPACE_PATH=$(find iosApp -name "*.xcworkspace" -print -quit)
           PROJECT_PATH=$(find iosApp -name "*.xcodeproj" -print -quit)
-          
+
           if [ -n "$WORKSPACE_PATH" ]; then
             echo "workspace_path=$WORKSPACE_PATH" >> $GITHUB_ENV
           elif [ -n "$PROJECT_PATH" ]; then
             echo "workspace_path=$PROJECT_PATH" >> $GITHUB_ENV
-          else:
+          else
             echo "No .xcworkspace or .xcodeproj file found in iosApp."
             exit 1
           fi
+
           echo "export_plist_path=iosApp/ExportOptions.plist" >> $GITHUB_ENV
 
       - name: Archive the iOS app
