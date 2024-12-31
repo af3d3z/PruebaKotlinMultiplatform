@@ -31,13 +31,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # List Gradle tasks for debugging
-      - name: List Gradle tasks
-        run: ./gradlew tasks
-
       # Build the Android APK (adjust task if necessary based on the task list)
       - name: Build Android APK
-        run: ./gradlew :composeApp:android:assembleRelease
+        run: ./gradlew assembleRelease  # Adjust based on your output from List Gradle tasks
 
       # Upload APK artifact
       - name: Upload APK artifact
@@ -60,11 +56,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # No need to manually set Xcode
-      # You can skip this step or only set it if needed
-      # - name: Set up Xcode (optional)
-      #   run: sudo xcode-select -s /Applications/Xcode.app
-
       # Cache Gradle dependencies
       - name: Cache Gradle dependencies
         uses: actions/cache@v3
@@ -78,16 +69,26 @@ jobs:
       - name: List Gradle tasks
         run: ./gradlew tasks
 
-      # Build the iOS IPA (update to the correct task for iOS)
-      - name: Build iOS IPA
+      # Build the iOS binaries
+      - name: Build iOS binaries
         run: ./gradlew :composeApp:iosX64Binaries
+
+      # List files for iOS build to locate the IPA
+      - name: List files for iOS build
+        run: find . -type f -name "*.ipa"
+
+      # Package iOS app to IPA
+      - name: Package iOS app to IPA
+        run: |
+          xcodebuild -workspace PruebaKotlinMultiplatform/ios/composeApp.xcworkspace -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
+          xcodebuild -exportArchive -archivePath $PWD/build/composeApp.xcarchive -exportPath $PWD/build/composeApp.ipa -exportOptionsPlist $PWD/ios/ExportOptions.plist
 
       # Upload IPA artifact
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v3
         with:
           name: PruebaKotlinMultiplatform-app-release-ipa
-          path: PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
+          path: $PWD/build/composeApp.ipa  # Update path based on where IPA is created
 
   create_release:
     needs: [build_android, build_ios]
@@ -105,4 +106,4 @@ jobs:
         with:
           files: |
             PruebaKotlinMultiplatform/android/build/outputs/apk/release/app-release.apk
-            PruebaKotlinMultiplatform/ios/build/ios/ipa/release/app-release.ipa
+            PruebaKotlinMultiplatform/ios/build/composeApp.ipa
