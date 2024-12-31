@@ -50,16 +50,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Ensure workspace and export plist paths are correctly set
-      - name: Set workspace and export plist paths
+      # Ensure correct paths for either .xcworkspace or .xcodeproj
+      - name: Set paths for iOS build
         run: |
-          echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" >> $GITHUB_ENV
+          # Check if xcworkspace exists
+          if [ -f "PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" ]; then
+            echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcworkspace" >> $GITHUB_ENV
+          else
+            echo "workspace_path=PruebaKotlinMultiplatform/ios/composeApp.xcodeproj" >> $GITHUB_ENV
+          fi
           echo "export_plist_path=PruebaKotlinMultiplatform/ios/ExportOptions.plist" >> $GITHUB_ENV
 
       # Archive the iOS app
       - name: Archive the iOS app
         run: |
-          xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
+          # Attempt to build with workspace, fallback to project if workspace doesn't exist
+          xcodebuild -workspace $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive || xcodebuild -project $workspace_path -scheme composeApp -sdk iphoneos -archivePath $PWD/build/composeApp.xcarchive archive
 
       # Export the IPA from the archive
       - name: Export the IPA
