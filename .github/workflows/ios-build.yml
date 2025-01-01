@@ -49,6 +49,12 @@ jobs:
           name: ios-app-ipa
           path: build/*.ipa
 
+      - name: Create Git Tag
+        run: |
+          TAG_NAME="v${{ github.run_number }}"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+
       - name: Create GitHub Release and Upload IPA
         uses: softprops/action-gh-release@v1
         with:
