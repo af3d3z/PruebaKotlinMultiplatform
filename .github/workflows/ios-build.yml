@@ -61,3 +61,4 @@ jobs:
           files: build/*.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN_PERMISSIONS: "contents: write"
