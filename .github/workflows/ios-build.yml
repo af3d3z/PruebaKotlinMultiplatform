@@ -52,8 +52,10 @@ jobs:
       - name: Create Git Tag
         run: |
           TAG_NAME="v${{ github.run_number }}"
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag $TAG_NAME
-          git push origin $TAG_NAME
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $TAG_NAME
 
       - name: Create GitHub Release and Upload IPA
         uses: softprops/action-gh-release@v1
@@ -61,4 +63,3 @@ jobs:
           files: build/*.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          GITHUB_TOKEN_PERMISSIONS: "contents: write"
